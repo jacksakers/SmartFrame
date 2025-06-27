@@ -11,39 +11,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        /* Basic styling for the body and layout */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #000;
-            color: #fff;
-            overflow: hidden; /* Hide scrollbars */
-        }
-        /* Style for the main photo slideshow background */
-        #slideshow {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            z-index: -1;
-            // transition: background-image 1.5s ease-out;
-            /* Add a dark overlay to make text more readable */
-            // filter: brightness(0.6);
-        }
-        /* Styling for the widgets */
-        .widget {
-            background-color: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-radius: 0.75rem; /* 12px */
-            padding: 1.5rem; /* 24px */
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-    </style>
+
+    <!-- Import the JavaScript file -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 </head>
 <body class="p-4 sm:p-6 md:p-8">
     <!-- Slideshow background container -->
@@ -67,8 +37,11 @@
                 <div id="weather-temp" class="text-5xl md:text-7xl font-bold">--°</div>
                 <div id="weather-city" class="text-lg md:text-2xl opacity-80">Loading...</div>
             </div>
-            <div id="weather-icon" class="text-6xl md:text-8xl"></div>
-            <div id="weather-desc" class="text-lg md:text-2xl text-right opacity-80 capitalize">Loading...</div>
+            <!-- make the weather icon stack on top of the description in tailwind css-->
+            <div class="flex flex-col items-end">
+                <img src="" id="weather-icon" class="w-16 h-16"></img>
+                <div id="weather-desc" class="text-lg md:text-2xl text-right opacity-80 capitalize">Loading...</div>
+            </div>
         </div>
 
         <!-- Empty Cell for spacing -->
@@ -83,8 +56,8 @@
         <!-- Empty Cell for spacing -->
         <div class="col-span-2 row-span-1"></div>
         
-        <div class="col-span-1 row-span-1 widget">
-            <h2 class="text-3xl font-bold mb-2">Top Headlines</h2>
+        <div class="col-span-1 row-span-1 widget overflow-hidden">
+            <h2 class="text-4xl font-bold mb-2">Top Headlines</h2>
             <div id="news-list" class="text-2xl space-y-2"><div>Loading...</div></div>
         </div>
         
@@ -95,177 +68,7 @@
         </div>
     </div>
 
-    <script>
-        // --- CONFIGURATION ---
-        // IMPORTANT: Replace these placeholders with your actual data and API keys!
-        const CONFIG = {
-            weather: {
-                apiKey: "48bf8926e401412ba4603116252506", 
-                city: "New York", // e.g., "London", "Tokyo,JP"
-                units: "imperial" // "metric" for Celsius, "imperial" for Fahrenheit
-            },
-            news: {
-                // Get a FREE key from https://newsapi.org/
-                apiKey: "2be14e6f95cf4eeb8ab6def2cc21e486",
-                country: "us" // e.g., "gb", "jp", "de"
-            },
-            slideshow: {
-                updateInterval: 15000 // Time in milliseconds (15 seconds)
-            },
-            updates: {
-                weather: 30 * 60 * 1000, // 30 minutes
-                news: 60 * 60 * 1000, // 1 hour
-                quote: 4 * 60 * 60 * 1000, // 4 hours
-                reminders: 5 * 60 * 1000 // 5 minutes
-            }
-        };
-
-        // --- DOM Elements ---
-        const slideshowEl = document.getElementById('slideshow');
-        const timeEl = document.getElementById('clock-time');
-        const dateEl = document.getElementById('clock-date');
-        const tempEl = document.getElementById('weather-temp');
-        const cityEl = document.getElementById('weather-city');
-        const descEl = document.getElementById('weather-desc');
-        const iconEl = document.getElementById('weather-icon');
-        const newsListEl = document.getElementById('news-list');
-        const quoteTextEl = document.getElementById('quote-text');
-        const quoteAuthorEl = document.getElementById('quote-author');
-        const remindersListEl = document.getElementById('reminders-list');
-
-        // --- Slideshow Logic ---
-        let photos = [];
-        let currentPhotoIndex = 0;
-
-        async function fetchAndStartSlideshow() {
-            try {
-                const response = await fetch('/api/photos');
-                if (!response.ok) throw new Error('Network response was not ok');
-                photos = await response.json();
-                
-                if (photos.length > 0) {
-                    // Preload the first image
-                    const firstImageUrl = `/static/uploads/${photos[0]}`;
-                    slideshowEl.style.backgroundImage = `url('${firstImageUrl}')`;
-                    currentPhotoIndex = 0;
-                    
-                    // Start the interval to change photos
-                    setInterval(changePhoto, CONFIG.slideshow.updateInterval);
-                } else {
-                    slideshowEl.style.backgroundColor = '#222'; // Fallback background
-                    console.log("No photos found in the uploads folder.");
-                }
-            } catch (error) {
-                console.error("Failed to fetch photos:", error);
-            }
-        }
-
-        function changePhoto() {
-            if (photos.length === 0) return;
-            currentPhotoIndex = (currentPhotoIndex + 1) % photos.length;
-            const imageUrl = `/static/uploads/${photos[currentPhotoIndex]}`;
-            // Preload the next image to reduce flicker
-            const img = new Image();
-            img.src = imageUrl;
-            img.onload = () => {
-                slideshowEl.style.backgroundImage = `url('${imageUrl}')`;
-            };
-        }
-
-        // --- Widget Updaters ---
-
-        function updateClock() {
-            const now = new Date();
-            timeEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            dateEl.textContent = now.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        }
-
-        async function updateWeather() {
-            if (CONFIG.weather.apiKey === "YOUR_OPENWEATHERMAP_API_KEY") {
-                 tempEl.textContent = "Set API";
-                 descEl.textContent = "Key";
-                 return;
-            }
-            try {
-                const url = `https://api.weatherapi.com/v1/current.json?key=${CONFIG.weather.apiKey}&q=West Columbia&aqi=no`;
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                tempEl.textContent = `${Math.round(data.current.temp_f)}°`;
-                cityEl.textContent = data.location.name;
-                descEl.textContent = data.current.condition.text;
-
-            } catch (error) {
-                console.error("Failed to fetch weather:", error);
-                cityEl.textContent = "Weather unavailable";
-            }
-        }
-
-        async function updateNews() {
-             if (CONFIG.news.apiKey === "YOUR_NEWSAPI_API_KEY") {
-                 newsListEl.innerHTML = `<div>Set NewsAPI Key</div>`;
-                 return;
-            }
-            try {
-                const url = `https://newsapi.org/v2/top-headlines?country=${CONFIG.news.country}&apiKey=${CONFIG.news.apiKey}&pageSize=3`;
-                const response = await fetch(url);
-                const data = await response.json();
-                newsListEl.innerHTML = data.articles.map(article => 
-                    `<div class="truncate">${article.title}</div>`
-                ).join('');
-            } catch(error) {
-                console.error("Failed to fetch news:", error);
-                newsListEl.innerHTML = "News unavailable.";
-            }
-        }
-        
-        async function updateQuote() {
-            try {
-                // Using a free, no-key-required API for quotes
-                const response = await fetch('http://api.quotable.io/random');
-                const data = await response.json();
-                quoteTextEl.textContent = `"${data.content}"`;
-                quoteAuthorEl.textContent = `- ${data.author}`;
-            } catch (error) {
-                console.error("Failed to fetch quote:", error);
-            }
-        }
-
-        async function updateReminders() {
-            try {
-                const response = await fetch('/api/reminders');
-                const reminders = await response.json();
-                if (reminders.length > 0) {
-                    remindersListEl.innerHTML = reminders.map(r => `<li>- ${r}</li>`).join('');
-                } else {
-                    remindersListEl.innerHTML = `<li>No reminders yet.</li>`;
-                }
-            } catch (error) {
-                console.error("Failed to fetch reminders:", error);
-            }
-        }
-
-
-        // --- Initial Load and Intervals ---
-        function initialize() {
-            // Initial calls to populate widgets immediately
-            updateClock();
-            updateWeather();
-            updateNews();
-            updateQuote();
-            updateReminders();
-            fetchAndStartSlideshow();
-
-            // Set intervals for periodic updates
-            setInterval(updateClock, 1000); // Every second for the clock
-            setInterval(updateWeather, CONFIG.updates.weather);
-            setInterval(updateNews, CONFIG.updates.news);
-            setInterval(updateQuote, CONFIG.updates.quote);
-            setInterval(updateReminders, CONFIG.updates.reminders);
-        }
-
-        // Start the application
-        document.addEventListener('DOMContentLoaded', initialize);
-    </script>
+    <!-- Import the JavaScript file -->
+    <script src="{{ url_for('static', filename='js/index.js') }}"></script>
 </body>
 </html>
