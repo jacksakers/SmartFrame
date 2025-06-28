@@ -115,8 +115,8 @@ async function updateNews() {
         const response = await fetch(url);
         const data = await response.json();
         newsListEl.innerHTML = data.articles.map(article => 
-            `<div class="truncate text-4xl">${article.title.substring(0, 21)}</div>
-            <div class="truncate text-3xl">${article.title.substring(21, 80)}</div>
+            `<div class="truncate text-4xl">${article.title.substring(0, 10)}</div>
+            <div class="truncate text-3xl">${article.title.substring(10, 80)}</div>
             <div class="text-2xl opacity-80">${article.source.name}</div>`
         ).join('');
     } catch(error) {
