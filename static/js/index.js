@@ -114,11 +114,14 @@ async function updateNews() {
         const url = `https://newsapi.org/v2/top-headlines?country=${CONFIG.news.country}&apiKey=${CONFIG.news.apiKey}&pageSize=3`;
         const response = await fetch(url);
         const data = await response.json();
-        newsListEl.innerHTML = data.articles.map(article => 
-            `<div class="truncate text-4xl">${article.title.substring(0, 10)}</div>
-            <div class="truncate text-3xl">${article.title.substring(10, 80)}</div>
-            <div class="text-2xl opacity-80">${article.source.name}</div>`
-        ).join('');
+        newsListEl.innerHTML = data.articles.map(article => {
+            // Split title at 21 characters
+            const firstLine = article.title.substring(0, 21);
+            const secondLine = article.title.substring(21);
+            return `<div class="truncate text-4xl">${firstLine}</div>
+            <div class="truncate text-3xl">${secondLine}</div>
+            <div class="text-2xl opacity-80">${article.source.name}</div>`;
+        }).join('');
     } catch(error) {
         console.error("Failed to fetch news:", error);
         newsListEl.innerHTML = "News unavailable.";
