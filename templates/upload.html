@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartFrame Manager</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f7fa;
+        }
+        .file-drop-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .file-drop-area:hover, .file-drop-area.active {
+            border-color: #3b82f6;
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+        .photo-thumbnail {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 0.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">SmartFrame Manager</h1>
+            <p class="text-gray-600">Upload photos and manage reminders for your digital photo frame</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Photo Upload Section -->
+            <section class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Upload Photos</h2>
+                
+                <div id="drop-area" class="file-drop-area mb-4">
+                    <p class="mb-2 text-gray-600">Drag & drop photos here or</p>
+                    <label class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded cursor-pointer">
+                        Browse Files
+                        <input type="file" id="fileInput" multiple accept="image/png, image/jpeg, image/jpg, image/gif" class="hidden">
+                    </label>
+                </div>
+                
+                <div id="upload-progress" class="hidden w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                    <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                </div>
+                
+                <div id="upload-status" class="text-sm text-gray-600 mb-4"></div>
+                
+                <h3 class="text-lg font-medium text-gray-800 mb-3 mt-6">Current Photos</h3>
+                <div id="photo-gallery" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <p id="loading-photos" class="text-gray-500">Loading photos...</p>
+                </div>
+            </section>
+            
+            <!-- Reminders Section -->
+            <section class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Manage Reminders</h2>
+                
+                <form id="reminder-form" class="mb-6">
+                    <div class="flex">
+                        <input type="text" id="reminder-text" placeholder="Add a new reminder..." 
+                            class="flex-grow px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 rounded-r-md">
+                            Add
+                        </button>
+                    </div>
+                </form>
+                
+                <h3 class="text-lg font-medium text-gray-800 mb-3">Current Reminders</h3>
+                <ul id="reminders-list" class="space-y-2 mb-4">
+                    <li class="text-gray-500">Loading reminders...</li>
+                </ul>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const dropArea = document.getElementById('drop-area');
+        const fileInput = document.getElementById('fileInput');
+        const uploadStatus = document.getElementById('upload-status');
+        const uploadProgress = document.getElementById('upload-progress');
+        const progressBar = document.getElementById('progress-bar');
+        const photoGallery = document.getElementById('photo-gallery');
+        const reminderForm = document.getElementById('reminder-form');
+        const reminderText = document.getElementById('reminder-text');
+        const remindersList = document.getElementById('reminders-list');
+
+        // Event listeners for drag and drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+            dropArea.classList.add('active');
+        }
+
+        function unhighlight() {
+            dropArea.classList.remove('active');
+        }
+
+        // Handle file selection
+        dropArea.addEventListener('drop', handleDrop, false);
+        fileInput.addEventListener('change', handleFiles, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles({ target: { files } });
+        }
+
+        async function handleFiles(e) {
+            const files = Array.from(e.target.files);
+            uploadStatus.textContent = `Uploading ${files.length} file(s)...`;
+            uploadProgress.classList.remove('hidden');
+            
+            let successCount = 0;
+            let errorCount = 0;
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const percentage = Math.round((i / files.length) * 100);
+                progressBar.style.width = `${percentage}%`;
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    
+                    const response = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (response.ok) {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                        console.error(`Error uploading ${file.name}:`, await response.text());
+                    }
+                } catch (error) {
+                    errorCount++;
+                    console.error('Upload error:', error);
+                }
+            }
+            
+            progressBar.style.width = '100%';
+            uploadStatus.textContent = `Uploaded ${successCount} file(s) successfully. ${errorCount} file(s) failed.`;
+            
+            // Reset file input
+            fileInput.value = '';
+            
+            // Refresh the photo gallery
+            setTimeout(() => {
+                loadPhotos();
+                uploadProgress.classList.add('hidden');
+            }, 1000);
+        }
+
+        // Load photos
+        async function loadPhotos() {
+            try {
+                const response = await fetch('/api/photos');
+                const photos = await response.json();
+                
+                if (photos.length === 0) {
+                    photoGallery.innerHTML = '<p class="text-gray-500 col-span-3">No photos uploaded yet.</p>';
+                    return;
+                }
+                
+                photoGallery.innerHTML = photos.map(photo => `
+                    <div class="photo-item">
+                        <img src="/static/uploads/${photo}" alt="${photo}" class="photo-thumbnail mb-1">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-gray-500 truncate max-w-[100px]">${photo}</span>
+                            <button class="delete-photo text-xs text-red-500 hover:text-red-700" data-filename="${photo}">Delete</button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Add event listeners to delete buttons
+                document.querySelectorAll('.delete-photo').forEach(button => {
+                    button.addEventListener('click', deletePhoto);
+                });
+            } catch (error) {
+                console.error('Error loading photos:', error);
+                photoGallery.innerHTML = '<p class="text-red-500 col-span-3">Error loading photos. Please try again.</p>';
+            }
+        }
+
+        // Delete photo
+        async function deletePhoto(e) {
+            const filename = e.target.dataset.filename;
+            if (!confirm(`Are you sure you want to delete ${filename}?`)) return;
+            
+            try {
+                const response = await fetch(`/api/photos/${filename}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    loadPhotos();
+                } else {
+                    alert('Error deleting photo. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error deleting photo:', error);
+                alert('Error deleting photo. Please try again.');
+            }
+        }
+
+        // Load reminders
+        async function loadReminders() {
+            try {
+                const response = await fetch('/api/reminders');
+                const reminders = await response.json();
+                
+                if (reminders.length === 0) {
+                    remindersList.innerHTML = '<li class="text-gray-500">No reminders added yet.</li>';
+                    return;
+                }
+                
+                remindersList.innerHTML = reminders.map((reminder, index) => `
+                    <li class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded">
+                        <span>${reminder}</span>
+                        <button class="delete-reminder text-red-500 hover:text-red-700" data-index="${index}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </li>
+                `).join('');
+                
+                // Add event listeners to delete buttons
+                document.querySelectorAll('.delete-reminder').forEach(button => {
+                    button.addEventListener('click', deleteReminder);
+                });
+            } catch (error) {
+                console.error('Error loading reminders:', error);
+                remindersList.innerHTML = '<li class="text-red-500">Error loading reminders. Please try again.</li>';
+            }
+        }
+
+        // Add reminder
+        reminderForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const text = reminderText.value.trim();
+            
+            if (!text) return;
+            
+            try {
+                const response = await fetch('/api/reminders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text })
+                });
+                
+                if (response.ok) {
+                    reminderText.value = '';
+                    loadReminders();
+                } else {
+                    alert('Error adding reminder. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error adding reminder:', error);
+                alert('Error adding reminder. Please try again.');
+            }
+        });
+
+        // Delete reminder
+        async function deleteReminder(e) {
+            const index = e.currentTarget.dataset.index;
+            
+            try {
+                const response = await fetch(`/api/reminders/${index}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    loadReminders();
+                } else {
+                    alert('Error deleting reminder. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error deleting reminder:', error);
+                alert('Error deleting reminder. Please try again.');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPhotos();
+            loadReminders();
+        });
+    </script>
+</body>
+</html>

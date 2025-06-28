@@ -42,7 +42,7 @@ def index():
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
     """
-    Handles file uploads. A GET request shows the upload form,
+    Handles file uploads. A GET request shows the upload interface,
     and a POST request processes the uploaded file.
     You will access this page from your main computer's browser.
     """
@@ -64,16 +64,8 @@ def upload_file():
         else:
             return jsonify({"error": "File type not allowed"}), 400
 
-    # If it's a GET request, show a simple HTML form for uploading files.
-    return '''
-    <!doctype html>
-    <title>Upload New Photo</title>
-    <h1>Upload New Photo to Smart Frame</h1>
-    <form method=post enctype=multipart/form-data>
-      <input type=file name=file>
-      <input type=submit value=Upload>
-    </form>
-    '''
+    # If it's a GET request, show the new upload interface
+    return render_template('upload.html')
 
 # --- API Endpoint to List Photos ---
 @app.route('/api/photos')
@@ -91,11 +83,12 @@ def get_photos():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# --- API Endpoint for Reminders ---
-@app.route('/api/reminders')
-def get_reminders():
+# --- API Endpoints for Reminders ---
+@app.route('/api/reminders', methods=['GET', 'POST'])
+def manage_reminders():
     """
-    Reads reminders from the reminders.txt file and returns them.
+    GET: Reads reminders from the reminders.txt file and returns them.
+    POST: Adds a new reminder to the reminders file.
     """
     try:
         # Ensure the reminders file exists, create it if it doesn't
@@ -103,12 +96,83 @@ def get_reminders():
              with open(REMINDERS_FILE, 'w') as f:
                 f.write("Add your reminders here, one per line!")
 
+        # GET request - return all reminders
+        if request.method == 'GET':
+            with open(REMINDERS_FILE, 'r') as f:
+                reminders = [line.strip() for line in f.readlines() if line.strip()]
+            return jsonify(reminders)
+        
+        # POST request - add a new reminder
+        elif request.method == 'POST':
+            data = request.get_json()
+            if not data or 'text' not in data:
+                return jsonify({"error": "No reminder text provided"}), 400
+            
+            reminder_text = data['text'].strip()
+            if not reminder_text:
+                return jsonify({"error": "Reminder text cannot be empty"}), 400
+                
+            # Read existing reminders
+            with open(REMINDERS_FILE, 'r') as f:
+                reminders = [line.strip() for line in f.readlines() if line.strip()]
+            
+            # Add new reminder
+            reminders.append(reminder_text)
+            
+            # Write back to file
+            with open(REMINDERS_FILE, 'w') as f:
+                for reminder in reminders:
+                    f.write(f"{reminder}\n")
+                    
+            return jsonify({"success": "Reminder added successfully"}), 201
+            
+    except Exception as e:
+        print(f"Error managing reminders: {e}")
+        return jsonify({"error": "Could not manage reminders"}), 500
+
+@app.route('/api/reminders/<int:index>', methods=['DELETE'])
+def delete_reminder(index):
+    """Deletes a specific reminder by its index."""
+    try:
+        # Read existing reminders
         with open(REMINDERS_FILE, 'r') as f:
             reminders = [line.strip() for line in f.readlines() if line.strip()]
-        return jsonify(reminders)
+        
+        # Check if index is valid
+        if index < 0 or index >= len(reminders):
+            return jsonify({"error": "Invalid reminder index"}), 400
+        
+        # Remove the reminder at the specified index
+        reminders.pop(index)
+        
+        # Write back to file
+        with open(REMINDERS_FILE, 'w') as f:
+            for reminder in reminders:
+                f.write(f"{reminder}\n")
+                
+        return jsonify({"success": "Reminder deleted successfully"}), 200
+        
     except Exception as e:
-        print(f"Error reading reminders file: {e}")
-        return jsonify({"error": "Could not read reminders file"}), 500
+        print(f"Error deleting reminder: {e}")
+        return jsonify({"error": "Could not delete reminder"}), 500
+
+@app.route('/api/photos/<filename>', methods=['DELETE'])
+def delete_photo(filename):
+    """Deletes a specific photo by its filename."""
+    try:
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        
+        # Check if the file exists
+        if not os.path.exists(file_path):
+            return jsonify({"error": "File not found"}), 404
+        
+        # Delete the file
+        os.remove(file_path)
+        return jsonify({"success": f"Photo '{filename}' deleted successfully"}), 200
+        
+    except Exception as e:
+        print(f"Error deleting photo: {e}")
+        return jsonify({"error": "Could not delete photo"}), 500
 
 
 # --- Run the App ---
