@@ -21,6 +21,13 @@
     <!-- Slideshow background container -->
     <div id="slideshow"></div>
 
+    <!-- Special Content Overlay -->
+    <div id="special-content-overlay" class="hidden absolute inset-0 z-10 p-8 sm:p-12 md:p-20 flex flex-col items-center justify-center">
+        <div id="special-content" class="w-full h-full text-center max-w-7xl">
+            <!-- Content will be injected here by JavaScript -->
+        </div>
+    </div>
+
     <!-- Main grid for laying out the widgets -->
     <div class="h-screen grid grid-cols-4 grid-rows-4 gap-6">
 
@@ -41,7 +48,7 @@
             </div>
             <!-- make the weather icon stack on top of the description in tailwind css-->
             <div class="flex flex-col items-end">
-                <img src="" id="weather-icon" class="w-16 h-16"></img>
+                <img src="" id="weather-icon" class="w-20 h-20"></img>
                 <div id="weather-desc" class="text-lg md:text-4xl text-right opacity-80 capitalize">Loading...</div>
             </div>
         </div>

@@ -1,4 +1,3 @@
-
 // --- CONFIGURATION ---
 // IMPORTANT: Replace these placeholders with your actual data and API keys!
 const CONFIG = {
@@ -20,7 +19,8 @@ const CONFIG = {
         news: 60 * 60 * 1000, // 1 hour
         quote: 4 * 60 * 60 * 1000, // 4 hours
         reminders: 5 * 60 * 1000 // 5 minutes
-    }
+    },
+    nasaApiKey: "EfFCqu9MJbGr7crV61dQ49Uo1jejD1M2kyERixTz" // Replace with your NASA API key or use "DEMO_KEY" for testing
 };
 
 // --- DOM Elements ---
@@ -35,10 +35,14 @@ const newsListEl = document.getElementById('news-list');
 const quoteTextEl = document.getElementById('quote-text');
 const quoteAuthorEl = document.getElementById('quote-author');
 const remindersListEl = document.getElementById('reminders-list');
+const specialContentOverlayEl = document.getElementById('special-content-overlay');
+const specialContentEl = document.getElementById('special-content');
 
 // --- Slideshow Logic ---
 let photos = [];
 let currentPhotoIndex = 0;
+let photoChangeCounter = 0;
+const SPECIAL_CONTENT_INTERVAL = 5;
 
 async function fetchAndStartSlideshow() {
     try {
@@ -65,6 +69,14 @@ async function fetchAndStartSlideshow() {
 
 function changePhoto() {
     if (photos.length === 0) return;
+
+    photoChangeCounter++;
+
+    if (photoChangeCounter >= SPECIAL_CONTENT_INTERVAL) {
+        photoChangeCounter = 0;
+        showSpecialContent();
+    } else {
+        hideSpecialContent();
     currentPhotoIndex = (currentPhotoIndex + 1) % photos.length;
     const imageUrl = `/static/uploads/${photos[currentPhotoIndex]}`;
     // Preload the next image to reduce flicker
@@ -73,6 +85,122 @@ function changePhoto() {
     img.onload = () => {
         slideshowEl.style.backgroundImage = `url('${imageUrl}')`;
     };
+}
+}
+
+// --- Special Content Logic ---
+
+const specialContentUpdaters = [
+    updateNasaApod,
+    updateDadJoke,
+    updateAdvice,
+    updateMarsPhoto
+];
+
+function showSpecialContent() {
+    document.querySelector('.h-screen.grid').style.display = 'none';
+    specialContentOverlayEl.classList.remove('hidden');
+
+    const randomUpdater = specialContentUpdaters[Math.floor(Math.random() * specialContentUpdaters.length)];
+    randomUpdater();
+}
+
+function hideSpecialContent() {
+    document.querySelector('.h-screen.grid').style.display = 'grid';
+    specialContentOverlayEl.classList.add('hidden');
+    specialContentEl.innerHTML = '';
+}
+
+async function updateNasaApod() {
+    try {
+        const response = await fetch(`https://api.nasa.gov/planetary/apod?api_key=${CONFIG.nasaApiKey}`);
+        const data = await response.json();
+        if (data.media_type === 'image') {
+            slideshowEl.style.backgroundImage = `url('${data.url}')`;
+            const content = `
+                <div class="h-full grid grid-rows-5 gap-6">
+                    <div class="row-span-1 widget flex items-center justify-center">
+                        <h2 class="text-5xl font-bold text-center">${data.title}</h2>
+                    </div>
+                    <div class="row-span-3"></div>
+                    <div class="row-span-1 widget overflow-hidden flex items-center justify-center">
+                        <p class="text-2xl overflow-hidden">${data.explanation}</p>
+                    </div>
+                </div>
+            `;
+            specialContentEl.innerHTML = content;
+        } else {
+            hideSpecialContent();
+        }
+    } catch (error) {
+        console.error("Failed to fetch NASA APOD:", error);
+        hideSpecialContent();
+    }
+}
+
+async function updateMarsPhoto() {
+    try {
+        const response = await fetch(`https://api.nasa.gov/mars-photos/api/v1/rovers/curiosity/latest_photos?api_key=${CONFIG.nasaApiKey}`);
+        const data = await response.json();
+        if (data.latest_photos && data.latest_photos.length > 0) {
+            const randomIndex = Math.floor(Math.random() * data.latest_photos.length);
+            const photo = data.latest_photos[randomIndex];
+            slideshowEl.style.backgroundImage = `url('${photo.img_src}')`;
+            const content = `
+                <div class="h-full grid grid-rows-5 gap-6">
+                    <div class="row-span-1 widget flex items-center justify-center">
+                        <h2 class="text-5xl font-bold text-center">${photo.rover.name} | Sol: ${photo.sol}</h2>
+                    </div>
+                    <div class="row-span-3"></div>
+                    <div class="row-span-1 widget overflow-hidden flex items-center justify-center">
+                        <p class="text-4xl overflow-hidden">Camera: ${photo.camera.full_name} | Status: ${photo.rover.status}</p>
+                    </div>
+                </div>
+            `;
+            specialContentEl.innerHTML = content;
+        } else {
+            hideSpecialContent();
+        }
+    } catch (error) {
+        console.error("Failed to fetch Mars Rover photo:", error);
+        hideSpecialContent();
+    }
+}
+
+async function updateDadJoke() {
+    try {
+        const response = await fetch('https://icanhazdadjoke.com/', {
+            headers: { 'Accept': 'application/json' }
+        });
+        const data = await response.json();
+        specialContentEl.innerHTML = `
+            <div class="h-full flex items-center justify-center">
+                <div class="widget max-w-3xl">
+                    <h2 class="text-4xl font-bold mb-4">Dad Joke</h2>
+                    <p class="text-6xl italic">\"${data.joke}\"</p>
+                </div>
+            </div>`;
+    } catch (error) {
+        console.error("Failed to fetch dad joke:", error);
+        hideSpecialContent();
+    }
+}
+
+async function updateAdvice() {
+    try {
+        const response = await fetch('https://api.adviceslip.com/advice');
+        const data = await response.json();
+        specialContentEl.innerHTML = `
+            <div class="h-full flex items-center justify-center">
+                <div class="widget max-w-3xl">
+                    <h2 class="text-4xl font-bold mb-4">Some Advice</h2>
+                    <p class="text-6xl italic">\"${data.slip.advice}\"</p>
+                </div>
+            </div>`;
+    } catch (error) {
+        console.error("Failed to fetch advice:", error);
+        hideSpecialContent();
+    }
 }
 
 // --- Widget Updaters ---
