@@ -18,7 +18,10 @@ const CONFIG = {
         weather: 30 * 60 * 1000, // 30 minutes
         news: 60 * 60 * 1000, // 1 hour
         quote: 4 * 60 * 60 * 1000, // 4 hours
-        reminders: 5 * 60 * 1000 // 5 minutes
+        leaderboard: 2 * 60 * 1000 // 2 minutes
+    },
+    choreboard: {
+        apiUrl: "http://localhost:5001" // Update this to your Choreboard server IP and port
     },
     nasaApiKey: "EfFCqu9MJbGr7crV61dQ49Uo1jejD1M2kyERixTz" // Replace with your NASA API key or use "DEMO_KEY" for testing
 };
@@ -35,6 +38,7 @@ const newsListEl = document.getElementById('news-list');
 const quoteTextEl = document.getElementById('quote-text');
 const quoteAuthorEl = document.getElementById('quote-author');
 const remindersListEl = document.getElementById('reminders-list');
+const leaderboardListEl = document.getElementById('leaderboard-list');
 const specialContentOverlayEl = document.getElementById('special-content-overlay');
 const specialContentEl = document.getElementById('special-content');
 
@@ -268,18 +272,59 @@ async function updateQuote() {
     }
 }
 
-async function updateReminders() {
+async function updateLeaderboard() {
     try {
-        const response = await fetch('/api/reminders');
-        const reminders = await response.json();
-        if (reminders.length > 0) {
-            remindersListEl.innerHTML = reminders.map(r => `<li>- ${r}</li>`).join('');
+        const response = await fetch(`${CONFIG.choreboard.apiUrl}/api/state`);
+        const data = await response.json();
+        
+        // Calculate scores for each user
+        const scores = calculateChoreboardScores(data);
+        
+        if (scores.length > 0) {
+            // Sort by total points descending
+            scores.sort((a, b) => b.totalPoints - a.totalPoints);
+            
+            leaderboardListEl.innerHTML = scores.map((score, index) => {
+                const position = index + 1;
+                const medal = position === 1 ? '🏆' : position === 2 ? '🥈' : position === 3 ? '🥉' : `${position}.`;
+                return `<div class="flex justify-between items-center">
+                    <span>${medal} ${score.userName}</span>
+                    <span class="font-bold">${score.totalPoints} pts</span>
+                </div>`;
+            }).join('');
         } else {
-            remindersListEl.innerHTML = `<li>No reminders yet.</li>`;
+            leaderboardListEl.innerHTML = `<div>No scores yet.</div>`;
         }
     } catch (error) {
-        console.error("Failed to fetch reminders:", error);
+        console.error("Failed to fetch leaderboard:", error);
+        leaderboardListEl.innerHTML = `<div>Leaderboard unavailable</div>`;
     }
+}
+
+function calculateChoreboardScores(data) {
+    const scores = [];
+    
+    data.users.forEach(user => {
+        let totalPoints = 0;
+        
+        // Calculate points from completed log
+        data.currentWeek.completedLog.forEach(log => {
+            if (log.userId === user.id) {
+                const chore = data.masterChores.find(c => c.id === log.choreId);
+                if (chore) {
+                    totalPoints += chore.points;
+                }
+            }
+        });
+        
+        scores.push({
+            userId: user.id,
+            userName: user.name,
+            totalPoints: totalPoints
+        });
+    });
+    
+    return scores;
 }
 
 
@@ -290,7 +335,7 @@ function initialize() {
     updateWeather();
     updateNews();
     updateQuote();
-    updateReminders();
+    updateLeaderboard();
     fetchAndStartSlideshow();
 
     // Set intervals for periodic updates
@@ -298,7 +343,7 @@ function initialize() {
     setInterval(updateWeather, CONFIG.updates.weather);
     setInterval(updateNews, CONFIG.updates.news);
     setInterval(updateQuote, CONFIG.updates.quote);
-    setInterval(updateReminders, CONFIG.updates.reminders);
+    setInterval(updateLeaderboard, CONFIG.updates.leaderboard);
 }
 
 // Start the application
