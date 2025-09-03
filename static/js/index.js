@@ -60,6 +60,9 @@ async function fetchAndStartSlideshow() {
             slideshowEl.style.backgroundImage = `url('${firstImageUrl}')`;
             currentPhotoIndex = 0;
             
+            // Apply initial dimming if needed
+            applyNightModeDimming();
+            
             // Start the interval to change photos
             setInterval(changePhoto, CONFIG.slideshow.updateInterval);
         } else {
@@ -88,6 +91,7 @@ function changePhoto() {
     img.src = imageUrl;
     img.onload = () => {
         slideshowEl.style.backgroundImage = `url('${imageUrl}')`;
+        applyNightModeDimming();
     };
 }
 }
@@ -121,6 +125,7 @@ async function updateNasaApod() {
         const data = await response.json();
         if (data.media_type === 'image') {
             slideshowEl.style.backgroundImage = `url('${data.url}')`;
+            applyNightModeDimming();
             const content = `
                 <div class="h-full grid grid-rows-5 gap-6">
                     <div class="row-span-1 widget flex items-center justify-center">
@@ -150,6 +155,7 @@ async function updateMarsPhoto() {
             const randomIndex = Math.floor(Math.random() * data.latest_photos.length);
             const photo = data.latest_photos[randomIndex];
             slideshowEl.style.backgroundImage = `url('${photo.img_src}')`;
+            applyNightModeDimming();
             const content = `
                 <div class="h-full grid grid-rows-5 gap-6">
                     <div class="row-span-1 widget flex items-center justify-center">
@@ -204,6 +210,20 @@ async function updateAdvice() {
     } catch (error) {
         console.error("Failed to fetch advice:", error);
         hideSpecialContent();
+    }
+}
+
+// --- Night Mode Dimming ---
+
+function applyNightModeDimming() {
+    const now = new Date();
+    const currentHour = now.getHours();
+    
+    // Dim the slideshow after 6pm (18:00) and before 7am (07:00)
+    if (currentHour >= 18 || currentHour < 7) {
+        slideshowEl.style.filter = 'brightness(0.5)';
+    } else {
+        slideshowEl.style.filter = 'brightness(1)';
     }
 }
 
