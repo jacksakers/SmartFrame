@@ -56,7 +56,7 @@ async function fetchAndStartSlideshow() {
         
         if (photos.length > 0) {
             // Preload the first image
-            const firstImageUrl = `/static/uploads/${photos[0]}`;
+            const firstImageUrl = `/home/jackberry/usbdrv/uploads/${photos[0]}`;
             slideshowEl.style.backgroundImage = `url('${firstImageUrl}')`;
             currentPhotoIndex = 0;
             
@@ -85,7 +85,7 @@ function changePhoto() {
     } else {
         hideSpecialContent();
     currentPhotoIndex = (currentPhotoIndex + 1) % photos.length;
-    const imageUrl = `/static/uploads/${photos[currentPhotoIndex]}`;
+    const imageUrl = `/home/jackberry/usbdrv/uploads/${photos[currentPhotoIndex]}`;
     // Preload the next image to reduce flicker
     const img = new Image();
     img.src = imageUrl;
