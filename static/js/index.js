@@ -306,9 +306,8 @@ async function updateLeaderboard() {
             
             leaderboardListEl.innerHTML = scores.map((score, index) => {
                 const position = index + 1;
-                const medal = position === 1 ? '🏆' : position === 2 ? '🥈' : position === 3 ? '🥉' : `${position}.`;
                 return `<div class="flex justify-between items-center">
-                    <span>${medal} ${score.userName}</span>
+                    <span>${position}. ${score.userName}</span>
                     <span class="font-bold">${score.totalPoints} pts</span>
                 </div>`;
             }).join('');
