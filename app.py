@@ -7,7 +7,7 @@ from werkzeug.utils import secure_filename
 
 # --- Configuration ---
 # The folder where uploaded photos will be stored.
-UPLOAD_FOLDER = os.path.join('static', 'uploads')
+UPLOAD_FOLDER = '/home/jackberry/usbdrv/uploads'
 # The file extensions we'll permit for uploads.
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 # The path to the file containing reminders.
