@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Stream Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .stream-container { border: 2px solid #ccc; margin: 20px 0; padding: 20px; }
+        .error { color: red; }
+        .success { color: green; }
+        img { max-width: 100%; height: auto; }
+        .info { background: #f0f0f0; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Camera Stream Test</h1>
+        
+        <div class="stream-container">
+            <h2>Camera Info</h2>
+            <div id="camera-info">Loading...</div>
+        </div>
+        
+        <div class="stream-container">
+            <h2>Connection Test</h2>
+            <button onclick="testConnection()">Test FFmpeg Connection</button>
+            <div id="test-result"></div>
+        </div>
+        
+        <div class="stream-container">
+            <h2>Live Stream</h2>
+            <img id="camera-stream" src="/api/camera/stream" alt="Camera Stream" style="max-width: 800px;">
+            <div id="stream-status"></div>
+        </div>
+        
+        <div class="stream-container">
+            <h2>Debug Info</h2>
+            <p>If the stream doesn't work, check:</p>
+            <ul>
+                <li>FFmpeg is installed and in PATH</li>
+                <li>RTSP URL is correct and accessible</li>
+                <li>Camera credentials are correct</li>
+                <li>Network connectivity to camera</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Load camera info
+        fetch('/api/camera/info')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('camera-info').innerHTML = `
+                    <div class="info">
+                        <strong>RTSP URL:</strong> ${data.rtsp_url}<br>
+                        <strong>Configured:</strong> ${data.configured ? '<span class="success">Yes</span>' : '<span class="error">No</span>'}<br>
+                        <strong>Stream Endpoint:</strong> ${data.stream_endpoint}
+                    </div>
+                `;
+            })
+            .catch(error => {
+                document.getElementById('camera-info').innerHTML = `<div class="error">Error loading camera info: ${error}</div>`;
+            });
+
+        // Test connection function
+        function testConnection() {
+            document.getElementById('test-result').innerHTML = 'Testing connection...';
+            
+            fetch('/api/camera/test')
+                .then(response => response.json())
+                .then(data => {
+                    const resultDiv = document.getElementById('test-result');
+                    if (data.success) {
+                        resultDiv.innerHTML = `<div class="success">✓ Connection successful!</div>`;
+                    } else {
+                        resultDiv.innerHTML = `
+                            <div class="error">✗ Connection failed</div>
+                            <div class="info">
+                                <strong>Return Code:</strong> ${data.return_code}<br>
+                                <strong>Error:</strong> ${data.error || 'Unknown error'}<br>
+                                <strong>Command:</strong> ${data.command}<br>
+                                ${data.stderr ? `<strong>FFmpeg Error:</strong><br><pre>${data.stderr}</pre>` : ''}
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('test-result').innerHTML = `<div class="error">Test failed: ${error}</div>`;
+                });
+        }
+
+        // Monitor stream loading
+        const streamImg = document.getElementById('camera-stream');
+        const streamStatus = document.getElementById('stream-status');
+        
+        streamImg.onload = function() {
+            streamStatus.innerHTML = '<div class="success">✓ Stream loaded successfully</div>';
+        };
+        
+        streamImg.onerror = function() {
+            streamStatus.innerHTML = '<div class="error">✗ Failed to load stream</div>';
+        };
+        
+        // Auto-test connection on page load
+        setTimeout(testConnection, 1000);
+    </script>
+</body>
+</html>
