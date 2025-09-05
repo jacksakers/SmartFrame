@@ -12,7 +12,7 @@ const CONFIG = {
         country: "us" // e.g., "gb", "jp", "de"
     },
     slideshow: {
-        updateInterval: 20000 // Time in milliseconds (20 seconds)
+        updateInterval: 15000 // Time in milliseconds (15 seconds)
     },
     updates: {
         weather: 30 * 60 * 1000, // 30 minutes
@@ -23,11 +23,7 @@ const CONFIG = {
     choreboard: {
         apiUrl: "http://localhost:5001" // Update this to your Choreboard server IP and port
     },
-    nasaApiKey: "EfFCqu9MJbGr7crV61dQ49Uo1jejD1M2kyERixTz", // Replace with your NASA API key or use "DEMO_KEY" for testing
-    rtspCamera: {
-        streamUrl: "rtsp://inspiration:ideasFlowFreely09@192.168.0.131/stream1", // Replace with your RTSP camera URL
-        displayDuration: 15000 // How long to show the camera feed (15 seconds)
-    }
+    nasaApiKey: "EfFCqu9MJbGr7crV61dQ49Uo1jejD1M2kyERixTz" // Replace with your NASA API key or use "DEMO_KEY" for testing
 };
 
 // --- DOM Elements ---
@@ -106,8 +102,7 @@ const specialContentUpdaters = [
     updateNasaApod,
     updateDadJoke,
     updateAdvice,
-    updateMarsPhoto,
-    updateCameraStream
+    updateMarsPhoto
 ];
 
 function showSpecialContent() {
@@ -214,61 +209,6 @@ async function updateAdvice() {
             </div>`;
     } catch (error) {
         console.error("Failed to fetch advice:", error);
-        hideSpecialContent();
-    }
-}
-
-function updateCameraStream() {
-    try {
-        if (CONFIG.rtspCamera.streamUrl === "rtsp://your-camera-ip:554/stream") {
-            console.log("RTSP camera URL not configured");
-            hideSpecialContent();
-            return;
-        }
-
-        // Create content with camera stream via server endpoint
-        const content = `
-            <div class="h-full grid grid-rows-5 gap-6">
-                <div class="row-span-1 widget flex items-center justify-center">
-                    <h2 class="text-5xl font-bold text-center">Security Camera</h2>
-                </div>
-                <div class="row-span-4 flex items-center justify-center">
-                    <img id="camera-stream" 
-                         src="/api/camera/stream" 
-                         class="max-w-full max-h-full rounded-lg shadow-lg"
-                         alt="Camera Stream"
-                         style="object-fit: contain;">
-                </div>
-            </div>
-        `;
-        
-        specialContentEl.innerHTML = content;
-        
-        // Handle image loading errors
-        const img = document.getElementById('camera-stream');
-        if (img) {
-            img.onerror = () => {
-                console.error("Failed to load camera stream");
-                // Show fallback message
-                specialContentEl.innerHTML = `
-                    <div class="h-full flex items-center justify-center">
-                        <div class="widget max-w-4xl text-center">
-                            <h2 class="text-4xl font-bold mb-4">Security Camera</h2>
-                            <p class="text-3xl mb-4 text-red-400">Stream Unavailable</p>
-                            <p class="text-2xl opacity-80">Check RTSP configuration and FFmpeg installation</p>
-                            <p class="text-xl opacity-60 mt-4">Stream: ${CONFIG.rtspCamera.streamUrl}</p>
-                        </div>
-                    </div>
-                `;
-            };
-            
-            img.onload = () => {
-                console.log("Camera stream loaded successfully");
-            };
-        }
-        
-    } catch (error) {
-        console.error("Failed to setup camera stream:", error);
         hideSpecialContent();
     }
 }
