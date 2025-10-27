@@ -6,24 +6,19 @@ const CONFIG = {
         city: "New York", // e.g., "London", "Tokyo,JP"
         units: "imperial" // "metric" for Celsius, "imperial" for Fahrenheit
     },
-    news: {
-        // Get a FREE key from https://newsapi.org/
-        apiKey: "2be14e6f95cf4eeb8ab6def2cc21e486",
-        country: "us" // e.g., "gb", "jp", "de"
-    },
     slideshow: {
         updateInterval: 15000 // Time in milliseconds (15 seconds)
     },
     updates: {
         weather: 30 * 60 * 1000, // 30 minutes
-        news: 60 * 60 * 1000, // 1 hour
         quote: 4 * 60 * 60 * 1000, // 4 hours
-        leaderboard: 2 * 60 * 1000 // 2 minutes
+        reminders: 5 * 60 * 1000, // 5 minutes
+        ncaaScores: 60 * 60 * 1000 // 1 hour - fetch new scores
     },
-    choreboard: {
-        apiUrl: "http://localhost:5001" // Update this to your Choreboard server IP and port
+    ncaa: {
+        scoreRotationInterval: 10000 // Rotate to next score every 10 seconds
     },
-    nasaApiKey: "EfFCqu9MJbGr7crV61dQ49Uo1jejD1M2kyERixTz" // Replace with your NASA API key or use "DEMO_KEY" for testing
+    nasaApiKey: "sPHoHKKLYtUJOoV78IcRcCWOfZOd5Hi8N2UKJ3vG" // Replace with your NASA API key or use "DEMO_KEY" for testing
 };
 
 // --- DOM Elements ---
@@ -34,11 +29,10 @@ const tempEl = document.getElementById('weather-temp');
 const cityEl = document.getElementById('weather-city');
 const descEl = document.getElementById('weather-desc');
 const iconEl = document.getElementById('weather-icon');
-const newsListEl = document.getElementById('news-list');
 const quoteTextEl = document.getElementById('quote-text');
 const quoteAuthorEl = document.getElementById('quote-author');
 const remindersListEl = document.getElementById('reminders-list');
-const leaderboardListEl = document.getElementById('leaderboard-list');
+const ncaaScoreEl = document.getElementById('ncaa-score');
 const specialContentOverlayEl = document.getElementById('special-content-overlay');
 const specialContentEl = document.getElementById('special-content');
 
@@ -257,26 +251,21 @@ async function updateWeather() {
     }
 }
 
-async function updateNews() {
-        if (CONFIG.news.apiKey === "YOUR_NEWSAPI_API_KEY") {
-            newsListEl.innerHTML = `<div>Set NewsAPI Key</div>`;
-            return;
-    }
+async function updateReminders() {
     try {
-        const url = `https://newsapi.org/v2/top-headlines?country=${CONFIG.news.country}&apiKey=${CONFIG.news.apiKey}&pageSize=3`;
-        const response = await fetch(url);
-        const data = await response.json();
-        newsListEl.innerHTML = data.articles.map(article => {
-            // Split title at 21 characters
-            const firstLine = article.title.substring(0, 21);
-            const secondLine = article.title.substring(21);
-            return `<div class="truncate text-4xl">${firstLine}</div>
-            <div class="truncate text-3xl">${secondLine}</div>
-            <div class="text-2xl opacity-80">${article.source.name}</div>`;
-        }).join('');
-    } catch(error) {
-        console.error("Failed to fetch news:", error);
-        newsListEl.innerHTML = "News unavailable.";
+        const response = await fetch('/api/reminders');
+        const reminders = await response.json();
+        
+        if (reminders.length > 0) {
+            remindersListEl.innerHTML = reminders.map(reminder => 
+                `<div class="mb-1">• ${reminder}</div>`
+            ).join('');
+        } else {
+            remindersListEl.innerHTML = `<div class="opacity-70">No reminders</div>`;
+        }
+    } catch (error) {
+        console.error("Failed to fetch reminders:", error);
+        remindersListEl.innerHTML = `<div>Reminders unavailable</div>`;
     }
 }
 
@@ -292,58 +281,105 @@ async function updateQuote() {
     }
 }
 
-async function updateLeaderboard() {
+// --- NCAA Football Scores ---
+let ncaaScores = [];
+let currentScoreIndex = 0;
+
+async function fetchNcaaScores() {
     try {
-        const response = await fetch(`${CONFIG.choreboard.apiUrl}/api/state`);
+        // Football uses YYYY/WK format instead of dates
+        // Get current date to determine the week
+        const now = new Date();
+        const year = now.getFullYear();
+        
+        // Calculate approximate week number (NCAA football typically runs weeks 1-15)
+        // Week 1 starts around late August/early September
+        const startOfSeason = new Date(year, 7, 25); // Approximate Aug 25
+        const weekNumber = Math.max(1, Math.min(15, Math.floor((now - startOfSeason) / (7 * 24 * 60 * 60 * 1000)) + 1));
+        
+        // Use our Flask backend as a proxy to avoid CORS issues
+        const url = `/api/ncaa/scores/${year}/${String(weekNumber - 1).padStart(2, '0')}`;
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
         
-        // Calculate scores for each user
-        const scores = calculateChoreboardScores(data);
-        
-        if (scores.length > 0) {
-            // Sort by total points descending
-            scores.sort((a, b) => b.totalPoints - a.totalPoints);
+        if (data && data.games && data.games.length > 0) {
+            // Extract the actual game data from the nested structure
+            ncaaScores = data.games
+                .filter(item => item.game && item.game.gameState === 'final')
+                .map(item => item.game);
             
-            leaderboardListEl.innerHTML = scores.map((score, index) => {
-                const position = index + 1;
-                return `<div class="flex justify-between items-center">
-                    <span>${position}. ${score.userName}</span>
-                    <span class="font-bold">${score.totalPoints} pts</span>
-                </div>`;
-            }).join('');
+            if (ncaaScores.length > 0) {
+                currentScoreIndex = 0;
+                displayCurrentNcaaScore();
+            } else {
+                ncaaScoreEl.innerHTML = `<div>No completed games yet</div>`;
+            }
         } else {
-            leaderboardListEl.innerHTML = `<div>No scores yet.</div>`;
+            ncaaScoreEl.innerHTML = `<div>No games this week</div>`;
         }
     } catch (error) {
-        console.error("Failed to fetch leaderboard:", error);
-        leaderboardListEl.innerHTML = `<div>Leaderboard unavailable</div>`;
+        console.error("Failed to fetch NCAA scores:", error);
+        ncaaScoreEl.innerHTML = `<div>Scores unavailable</div>`;
     }
 }
 
-function calculateChoreboardScores(data) {
-    const scores = [];
+function displayCurrentNcaaScore() {
+    if (ncaaScores.length === 0) {
+        ncaaScoreEl.innerHTML = `<div>No scores available</div>`;
+        return;
+    }
     
-    data.users.forEach(user => {
-        let totalPoints = 0;
-        
-        // Calculate points from completed log
-        data.currentWeek.completedLog.forEach(log => {
-            if (log.userId === user.id) {
-                const chore = data.masterChores.find(c => c.id === log.choreId);
-                if (chore) {
-                    totalPoints += chore.points;
-                }
-            }
-        });
-        
-        scores.push({
-            userId: user.id,
-            userName: user.name,
-            totalPoints: totalPoints
-        });
-    });
+    const game = ncaaScores[currentScoreIndex];
     
-    return scores;
+    // Extract team data from the API response
+    const homeTeam = game.home || {};
+    const awayTeam = game.away || {};
+    
+    const homeName = homeTeam.names?.short || homeTeam.name || 'Home';
+    const awayName = awayTeam.names?.short || awayTeam.name || 'Away';
+    const homeScore = parseInt(homeTeam.score) || 0;
+    const awayScore = parseInt(awayTeam.score) || 0;
+    
+    // Determine winner
+    const homeWon = homeTeam.winner === true;
+    const awayWon = awayTeam.winner === true;
+    
+    // Format the date
+    let dateStr = '';
+    if (game.startDate) {
+        dateStr = game.startDate;
+    } else if (game.startTimeEpoch) {
+        dateStr = new Date(game.startTimeEpoch * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+    
+    const gameStatus = game.finalMessage || game.gameState || 'Final';
+    
+    ncaaScoreEl.innerHTML = `
+        <div class="space-y-1">
+            <div class="flex justify-between items-center text-3xl ${awayWon ? 'font-bold text-4xl' : ''}">
+                <span class="truncate mr-2">${awayName}</span>
+                <span>${awayScore}</span>
+            </div>
+            <div class="flex justify-between items-center text-3xl ${homeWon ? 'font-bold text-4xl' : ''}">
+                <span class="truncate mr-2">${homeName}</span>
+                <span>${homeScore}</span>
+            </div>
+            <div class="text-lg opacity-70 mt-2">
+                ${dateStr} ${gameStatus}
+            </div>
+        </div>
+    `;
+}
+
+function rotateNcaaScore() {
+    if (ncaaScores.length === 0) return;
+    currentScoreIndex = (currentScoreIndex + 1) % ncaaScores.length;
+    displayCurrentNcaaScore();
 }
 
 
@@ -352,17 +388,18 @@ function initialize() {
     // Initial calls to populate widgets immediately
     updateClock();
     updateWeather();
-    updateNews();
+    updateReminders();
     updateQuote();
-    updateLeaderboard();
+    fetchNcaaScores();
     fetchAndStartSlideshow();
 
     // Set intervals for periodic updates
     setInterval(updateClock, 1000); // Every second for the clock
     setInterval(updateWeather, CONFIG.updates.weather);
-    setInterval(updateNews, CONFIG.updates.news);
+    setInterval(updateReminders, CONFIG.updates.reminders);
     setInterval(updateQuote, CONFIG.updates.quote);
-    setInterval(updateLeaderboard, CONFIG.updates.leaderboard);
+    setInterval(fetchNcaaScores, CONFIG.updates.ncaaScores);
+    setInterval(rotateNcaaScore, CONFIG.ncaa.scoreRotationInterval);
 }
 
 // Start the application

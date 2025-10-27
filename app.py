@@ -174,6 +174,26 @@ def delete_photo(filename):
         print(f"Error deleting photo: {e}")
         return jsonify({"error": "Could not delete photo"}), 500
 
+@app.route('/api/ncaa/scores/<year>/<week>')
+def get_ncaa_scores(year, week):
+    """Proxy endpoint for NCAA API to avoid CORS issues."""
+    try:
+        import requests
+        url = f"https://ncaa-api.henrygd.me/scoreboard/football/fbs/{year}/{week}"
+        print(f"Requesting NCAA scores from: {url}")
+        response = requests.get(url, timeout=10)
+        print(f"Response status: {response.status_code}")
+        print(f"Response body: {response.text}")
+
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({"error": f"NCAA API returned status {response.status_code}"}), response.status_code
+
+    except Exception as e:
+        print(f"Error fetching NCAA scores: {e}")
+        return jsonify({"error": "Could not fetch NCAA scores"}), 500
+
 
 # --- Run the App ---
 if __name__ == '__main__':
