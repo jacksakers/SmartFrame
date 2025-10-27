@@ -345,6 +345,10 @@ function displayCurrentNcaaScore() {
     const homeScore = parseInt(homeTeam.score) || 0;
     const awayScore = parseInt(awayTeam.score) || 0;
     
+    // Get rankings (only show if ranked in top 25)
+    const homeRank = homeTeam.rank ? `#${homeTeam.rank}` : '';
+    const awayRank = awayTeam.rank ? `#${awayTeam.rank}` : '';
+    
     // Determine winner
     const homeWon = homeTeam.winner === true;
     const awayWon = awayTeam.winner === true;
@@ -362,11 +366,15 @@ function displayCurrentNcaaScore() {
     ncaaScoreEl.innerHTML = `
         <div class="space-y-1">
             <div class="flex justify-between items-center text-3xl ${awayWon ? 'font-bold text-4xl' : ''}">
-                <span class="truncate mr-2">${awayName}</span>
+                <span class="truncate mr-2">
+                    ${awayRank ? `<span class="text-yellow-400 text-2xl">${awayRank}</span> ` : ''}${awayName}
+                </span>
                 <span>${awayScore}</span>
             </div>
             <div class="flex justify-between items-center text-3xl ${homeWon ? 'font-bold text-4xl' : ''}">
-                <span class="truncate mr-2">${homeName}</span>
+                <span class="truncate mr-2">
+                    ${homeRank ? `<span class="text-yellow-400 text-2xl">${homeRank}</span> ` : ''}${homeName}
+                </span>
                 <span>${homeScore}</span>
             </div>
             <div class="text-lg opacity-70 mt-2">
