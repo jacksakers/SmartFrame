@@ -18,7 +18,7 @@ const CONFIG = {
     ncaa: {
         scoreRotationInterval: 10000 // Rotate to next score every 10 seconds
     },
-    nasaApiKey: "sPHoHKKLYtUJOoV78IcRcCWOfZOd5Hi8N2UKJ3vG" // Replace with your NASA API key or use "DEMO_KEY" for testing
+    // nasaApiKey: "sPHoHKKLYtUJOoV78IcRcCWOfZOd5Hi8N2UKJ3vG" // Replace with your NASA API key or use "DEMO_KEY" for testing
 };
 
 // --- DOM Elements ---
@@ -93,7 +93,7 @@ function changePhoto() {
 // --- Special Content Logic ---
 
 const specialContentUpdaters = [
-    updateNasaApod,
+    // updateNasaApod,
     updateDadJoke,
     updateAdvice,
     updateMarsPhoto
