@@ -397,7 +397,7 @@ function initialize() {
     updateClock();
     updateWeather();
     updateReminders();
-    updateQuote();
+    // updateQuote();
     fetchNcaaScores();
     fetchAndStartSlideshow();
 
@@ -405,7 +405,7 @@ function initialize() {
     setInterval(updateClock, 1000); // Every second for the clock
     setInterval(updateWeather, CONFIG.updates.weather);
     setInterval(updateReminders, CONFIG.updates.reminders);
-    setInterval(updateQuote, CONFIG.updates.quote);
+    // setInterval(updateQuote, CONFIG.updates.quote);
     setInterval(fetchNcaaScores, CONFIG.updates.ncaaScores);
     setInterval(rotateNcaaScore, CONFIG.ncaa.scoreRotationInterval);
 }
