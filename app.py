@@ -226,9 +226,12 @@ def get_wikipedia_today():
                     'type': 'featured'
                 })
             
-            # Add most read articles
+            # Add ALL most read articles
             if 'mostread' in data and 'articles' in data['mostread']:
-                for article in data['mostread']['articles'][:10]:  # Limit to top 10
+                mostread_articles = data['mostread']['articles']
+                print(f"Found {len(mostread_articles)} most read articles")
+                
+                for article in mostread_articles:
                     articles.append({
                         'title': article['titles']['display'],
                         'displaytitle': article['titles']['display'],
@@ -236,8 +239,11 @@ def get_wikipedia_today():
                         'thumbnail': article.get('thumbnail', {}).get('source', ''),
                         'content_urls': article.get('content_urls', {}),
                         'type': 'mostread',
-                        'views': article.get('views', 0)
+                        'views': article.get('views', 0),
+                        'rank': article.get('rank', 0)
                     })
+            
+            print(f"Returning {len(articles)} total articles")
             
             if articles:
                 return jsonify({'articles': articles})
