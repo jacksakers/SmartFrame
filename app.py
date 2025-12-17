@@ -4,6 +4,10 @@
 import os
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # --- Configuration ---
 # The folder where uploaded photos will be stored.
@@ -174,25 +178,77 @@ def delete_photo(filename):
         print(f"Error deleting photo: {e}")
         return jsonify({"error": "Could not delete photo"}), 500
 
-@app.route('/api/ncaa/scores/<year>/<week>')
-def get_ncaa_scores(year, week):
-    """Proxy endpoint for NCAA API to avoid CORS issues."""
+@app.route('/api/wikipedia/today')
+def get_wikipedia_today():
+    """Proxy endpoint for Wikipedia's featured article and most read articles of the day."""
     try:
         import requests
-        url = f"https://ncaa-api.henrygd.me/scoreboard/football/fbs/{year}/{week}"
-        print(f"Requesting NCAA scores from: {url}")
-        response = requests.get(url, timeout=10)
+        from datetime import datetime
+        
+        # Get today's date in the format Wikimedia expects
+        today = datetime.now()
+        date = today.strftime('%Y/%m/%d')
+        
+        # Get credentials from environment
+        access_token = os.getenv('WIKIMEDIA_ACCESS_TOKEN', '')
+        user_agent = os.getenv('WIKIMEDIA_USER_AGENT', 'SmartFrame/1.0')
+        
+        # Build the request
+        language_code = 'en'
+        base_url = 'https://api.wikimedia.org/feed/v1/wikipedia/'
+        url = base_url + language_code + '/featured/' + date
+        
+        headers = {
+            'User-Agent': user_agent
+        }
+        
+        # Only add Authorization header if token is provided
+        if access_token and access_token != 'YOUR_WIKIMEDIA_TOKEN':
+            headers['Authorization'] = f'Bearer {access_token}'
+        
+        print(f"Requesting Wikipedia articles from: {url}")
+        response = requests.get(url, headers=headers, timeout=10)
         print(f"Response status: {response.status_code}")
-        print(f"Response body: {response.text}")
 
         if response.status_code == 200:
-            return jsonify(response.json())
+            data = response.json()
+            articles = []
+            
+            # Add the featured article first
+            if 'tfa' in data:
+                article = data['tfa']
+                articles.append({
+                    'title': article['titles']['display'],
+                    'displaytitle': article['titles']['display'],
+                    'extract_html': article['extract_html'],
+                    'thumbnail': article.get('thumbnail', {}).get('source', ''),
+                    'content_urls': article['content_urls'],
+                    'type': 'featured'
+                })
+            
+            # Add most read articles
+            if 'mostread' in data and 'articles' in data['mostread']:
+                for article in data['mostread']['articles'][:10]:  # Limit to top 10
+                    articles.append({
+                        'title': article['titles']['display'],
+                        'displaytitle': article['titles']['display'],
+                        'extract_html': article.get('extract_html', article.get('extract', '')),
+                        'thumbnail': article.get('thumbnail', {}).get('source', ''),
+                        'content_urls': article.get('content_urls', {}),
+                        'type': 'mostread',
+                        'views': article.get('views', 0)
+                    })
+            
+            if articles:
+                return jsonify({'articles': articles})
+            else:
+                return jsonify({"error": "No articles found"}), 404
         else:
-            return jsonify({"error": f"NCAA API returned status {response.status_code}"}), response.status_code
+            return jsonify({"error": f"Wikimedia API returned status {response.status_code}"}), response.status_code
 
     except Exception as e:
-        print(f"Error fetching NCAA scores: {e}")
-        return jsonify({"error": "Could not fetch NCAA scores"}), 500
+        print(f"Error fetching Wikipedia articles: {e}")
+        return jsonify({"error": "Could not fetch Wikipedia articles"}), 500
 
 
 # --- Run the App ---

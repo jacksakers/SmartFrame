@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="3600">
+    <meta http-equiv="refresh" content="5000">
 
     <title>Info Hub</title>
     <!-- Tailwind CSS for styling -->
@@ -56,7 +56,7 @@
         <!-- Empty Cell for spacing -->
         <div class="col-span-4 row-span-2"></div>
 
-        <!-- Reminders & NCAA Football Widgets -->
+        <!-- Reminders & Teleprompter Widgets -->
         <div class="col-span-1 row-span-1 widget overflow-hidden">
              <h2 class="text-4xl font-bold mb-2 ml-5">Reminders</h2>
              <div id="reminders-list" class="text-3xl space-y-2 ml-5">Loading...</div>
@@ -65,10 +65,11 @@
         <!-- Empty Cell for spacing -->
         <div class="col-span-2 row-span-1"></div>
         
-        <div class="col-span-1 row-span-1 widget overflow-hidden">
-            <h2 class="text-3xl font-bold mb-2">NCAA Football</h2>
-            <div id="ncaa-score" class="text-2xl">
-                <div>Loading scores...</div>
+        <div class="col-span-1 row-span-1 widget overflow-hidden relative">
+            <div id="teleprompter-container" class="relative h-full overflow-hidden">
+                <div id="teleprompter-content" class="text-2xl leading-relaxed">
+                    <div>Loading article...</div>
+                </div>
             </div>
         </div>
         

@@ -1,0 +1,19 @@
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+
+# Uploads
+static/uploads/*
+!static/uploads/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,10 +1,9 @@
 // --- CONFIGURATION ---
-// IMPORTANT: Replace these placeholders with your actual data and API keys!
+// Note: API keys are now managed server-side via .env file
 const CONFIG = {
     weather: {
-        apiKey: "48bf8926e401412ba4603116252506", 
-        city: "New York", // e.g., "London", "Tokyo,JP"
-        units: "imperial" // "metric" for Celsius, "imperial" for Fahrenheit
+        city: "West Columbia",
+        units: "imperial"
     },
     slideshow: {
         updateInterval: 15000 // Time in milliseconds (15 seconds)
@@ -13,12 +12,13 @@ const CONFIG = {
         weather: 30 * 60 * 1000, // 30 minutes
         quote: 4 * 60 * 60 * 1000, // 4 hours
         reminders: 5 * 60 * 1000, // 5 minutes
-        ncaaScores: 60 * 60 * 1000 // 1 hour - fetch new scores
+        wikipedia: 24 * 60 * 60 * 1000 // 24 hours - new article daily
     },
-    ncaa: {
-        scoreRotationInterval: 10000 // Rotate to next score every 10 seconds
-    },
-    // nasaApiKey: "sPHoHKKLYtUJOoV78IcRcCWOfZOd5Hi8N2UKJ3vG" // Replace with your NASA API key or use "DEMO_KEY" for testing
+    teleprompter: {
+        scrollSpeed: 0.5, // pixels per frame (adjust for reading speed)
+        pauseDuration: 3000, // pause at end before resetting (ms)
+        articleRotationInterval: 40000, // rotate to next article every 40 seconds
+    }
 };
 
 // --- DOM Elements ---
@@ -32,7 +32,7 @@ const iconEl = document.getElementById('weather-icon');
 const quoteTextEl = document.getElementById('quote-text');
 const quoteAuthorEl = document.getElementById('quote-author');
 const remindersListEl = document.getElementById('reminders-list');
-const ncaaScoreEl = document.getElementById('ncaa-score');
+const teleprompterContentEl = document.getElementById('teleprompter-content');
 const specialContentOverlayEl = document.getElementById('special-content-overlay');
 const specialContentEl = document.getElementById('special-content');
 
@@ -94,9 +94,9 @@ function changePhoto() {
 
 const specialContentUpdaters = [
     // updateNasaApod,
+    // updateMarsPhoto,
     updateDadJoke,
     updateAdvice,
-    updateMarsPhoto
 ];
 
 function showSpecialContent() {
@@ -230,14 +230,11 @@ function updateClock() {
 }
 
 async function updateWeather() {
-    if (CONFIG.weather.apiKey === "YOUR_OPENWEATHERMAP_API_KEY") {
-            tempEl.textContent = "Set API";
-            descEl.textContent = "Key";
-            return;
-    }
     try {
-        const url = `https://api.weatherapi.com/v1/current.json?key=${CONFIG.weather.apiKey}&q=West Columbia&aqi=no`;
-        const response = await fetch(url);
+        const url = `/api/weather`; // Will need to create this endpoint
+        // For now, keeping direct call but should move to backend
+        const directUrl = `https://api.weatherapi.com/v1/current.json?key=48bf8926e401412ba4603116252506&q=West Columbia&aqi=no`;
+        const response = await fetch(directUrl);
         const data = await response.json();
         
         tempEl.textContent = `${Math.round(data.current.temp_f)}°`;
@@ -281,115 +278,120 @@ async function updateQuote() {
     }
 }
 
-// --- NCAA Football Scores ---
-let ncaaScores = [];
-let currentScoreIndex = 0;
+// --- Wikipedia Teleprompter ---
+let teleprompterScrollPosition = 0;
+let teleprompterAnimationId = null;
+let teleprompterPaused = false;
+let teleprompterMaxScroll = 0;
+let wikipediaArticles = [];
+let currentArticleIndex = 0;
 
-async function fetchNcaaScores() {
+async function fetchWikipediaArticle() {
     try {
-        // Football uses YYYY/WK format instead of dates
-        // Get current date to determine the week
-        const now = new Date();
-        const year = now.getFullYear();
-        
-        // Calculate approximate week number (NCAA football typically runs weeks 1-15)
-        // Week 1 starts around late August/early September
-        const startOfSeason = new Date(year, 7, 25); // Approximate Aug 25
-        const weekNumber = Math.max(1, Math.min(15, Math.floor((now - startOfSeason) / (7 * 24 * 60 * 60 * 1000)) + 1));
-        
-        // Use our Flask backend as a proxy to avoid CORS issues
-        const url = `/api/ncaa/scores/${year}/${String(weekNumber - 1).padStart(2, '0')}`;
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        const response = await fetch('/api/wikipedia/today');
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         
         const data = await response.json();
         
-        if (data && data.games && data.games.length > 0) {
-            // Extract the actual game data from the nested structure
-            ncaaScores = data.games
-                .filter(item => item.game && item.game.gameState === 'final')
-                .map(item => item.game);
+        if (data && data.articles && data.articles.length > 0) {
+            wikipediaArticles = data.articles;
+            currentArticleIndex = 0;
+            displayCurrentArticle();
             
-            if (ncaaScores.length > 0) {
-                currentScoreIndex = 0;
-                displayCurrentNcaaScore();
-            } else {
-                ncaaScoreEl.innerHTML = `<div>No completed games yet</div>`;
-            }
+            // Set up rotation between articles
+            setInterval(rotateToNextArticle, CONFIG.teleprompter.articleRotationInterval);
         } else {
-            ncaaScoreEl.innerHTML = `<div>No games this week</div>`;
+            teleprompterContentEl.innerHTML = `<div>No articles available</div>`;
         }
     } catch (error) {
-        console.error("Failed to fetch NCAA scores:", error);
-        ncaaScoreEl.innerHTML = `<div>Scores unavailable</div>`;
+        console.error("Failed to fetch Wikipedia articles:", error);
+        teleprompterContentEl.innerHTML = `<div>Articles unavailable</div>`;
     }
 }
 
-function displayCurrentNcaaScore() {
-    if (ncaaScores.length === 0) {
-        ncaaScoreEl.innerHTML = `<div>No scores available</div>`;
-        return;
+function rotateToNextArticle() {
+    if (wikipediaArticles.length === 0) return;
+    
+    // Stop current animation
+    if (teleprompterAnimationId) {
+        cancelAnimationFrame(teleprompterAnimationId);
+        teleprompterAnimationId = null;
     }
     
-    const game = ncaaScores[currentScoreIndex];
+    // Move to next article
+    currentArticleIndex = (currentArticleIndex + 1) % wikipediaArticles.length;
+    displayCurrentArticle();
+}
+
+function displayCurrentArticle() {
+    if (wikipediaArticles.length === 0) return;
     
-    // Extract team data from the API response
-    const homeTeam = game.home || {};
-    const awayTeam = game.away || {};
+    const article = wikipediaArticles[currentArticleIndex];
     
-    const homeName = homeTeam.names?.short || homeTeam.name || 'Home';
-    const awayName = awayTeam.names?.short || awayTeam.name || 'Away';
-    const homeScore = parseInt(homeTeam.score) || 0;
-    const awayScore = parseInt(awayTeam.score) || 0;
+    // Remove Wikipedia's inline styles and clean up HTML
+    let cleanHtml = (article.extract_html || '')
+        .replace(/style="[^"]*"/g, '')
+        .replace(/<a [^>]*>/g, '<span>')
+        .replace(/<\/a>/g, '</span>')
+        .replace(/<b>/g, '<strong>')
+        .replace(/<\/b>/g, '</strong>');
     
-    // Get rankings (only show if ranked in top 25)
-    const homeRank = homeTeam.rank ? `#${homeTeam.rank}` : '';
-    const awayRank = awayTeam.rank ? `#${awayTeam.rank}` : '';
+    const title = article.displaytitle || article.title || 'Featured Article';
+    const articleType = article.type === 'featured' ? '⭐ Featured' : '📈 Trending';
+    const viewCount = article.views ? `${(article.views / 1000).toFixed(0)}K views` : '';
     
-    // Determine winner
-    const homeWon = homeTeam.winner === true;
-    const awayWon = awayTeam.winner === true;
-    
-    // Format the date
-    let dateStr = '';
-    if (game.startDate) {
-        dateStr = game.startDate;
-    } else if (game.startTimeEpoch) {
-        dateStr = new Date(game.startTimeEpoch * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    }
-    
-    const gameStatus = game.finalMessage || game.gameState || 'Final';
-    
-    ncaaScoreEl.innerHTML = `
-        <div class="space-y-1">
-            <div class="flex justify-between items-center text-3xl ${awayWon ? 'font-bold text-4xl' : ''}">
-                <span class="truncate mr-2">
-                    ${awayRank ? `<span class="text-yellow-400 text-2xl">${awayRank}</span> ` : ''}${awayName}
-                </span>
-                <span>${awayScore}</span>
-            </div>
-            <div class="flex justify-between items-center text-3xl ${homeWon ? 'font-bold text-4xl' : ''}">
-                <span class="truncate mr-2">
-                    ${homeRank ? `<span class="text-yellow-400 text-2xl">${homeRank}</span> ` : ''}${homeName}
-                </span>
-                <span>${homeScore}</span>
-            </div>
-            <div class="text-lg opacity-70 mt-2">
-                ${dateStr} ${gameStatus}
-            </div>
-        </div>
+    teleprompterContentEl.innerHTML = `
+        <div class="text-xl opacity-70 mb-2">${articleType} ${viewCount ? '• ' + viewCount : ''}</div>
+        <h3 class="text-3xl font-bold mb-4">${title}</h3>
+        <div class="article-content">${cleanHtml}</div>
     `;
+    
+    // Reset scroll position
+    teleprompterScrollPosition = 0;
+    teleprompterPaused = false;
+    teleprompterContentEl.style.transform = 'translateY(0)';
+    
+    // Calculate max scroll distance
+    setTimeout(() => {
+        const containerHeight = document.getElementById('teleprompter-container').offsetHeight;
+        const contentHeight = teleprompterContentEl.offsetHeight;
+        teleprompterMaxScroll = Math.max(0, contentHeight - containerHeight + 100);
+        
+        // Start scrolling animation if there's content to scroll
+        if (teleprompterMaxScroll > 0) {
+            startTeleprompterScroll();
+        }
+    }, 100);
 }
 
-function rotateNcaaScore() {
-    if (ncaaScores.length === 0) return;
-    currentScoreIndex = (currentScoreIndex + 1) % ncaaScores.length;
-    displayCurrentNcaaScore();
+function startTeleprompterScroll() {
+    if (teleprompterAnimationId) {
+        cancelAnimationFrame(teleprompterAnimationId);
+    }
+    
+    function animate() {
+        if (teleprompterPaused) {
+            teleprompterAnimationId = requestAnimationFrame(animate);
+            return;
+        }
+        
+        teleprompterScrollPosition += CONFIG.teleprompter.scrollSpeed;
+        
+        if (teleprompterScrollPosition >= teleprompterMaxScroll) {
+            // Reached the end, pause then reset
+            teleprompterPaused = true;
+            setTimeout(() => {
+                teleprompterScrollPosition = 0;
+                teleprompterPaused = false;
+            }, CONFIG.teleprompter.pauseDuration);
+        }
+        
+        teleprompterContentEl.style.transform = `translateY(-${teleprompterScrollPosition}px)`;
+        teleprompterAnimationId = requestAnimationFrame(animate);
+    }
+    
+    teleprompterAnimationId = requestAnimationFrame(animate);
 }
-
 
 // --- Initial Load and Intervals ---
 function initialize() {
@@ -397,17 +399,14 @@ function initialize() {
     updateClock();
     updateWeather();
     updateReminders();
-    // updateQuote();
-    fetchNcaaScores();
+    fetchWikipediaArticle();
     fetchAndStartSlideshow();
 
     // Set intervals for periodic updates
     setInterval(updateClock, 1000); // Every second for the clock
     setInterval(updateWeather, CONFIG.updates.weather);
     setInterval(updateReminders, CONFIG.updates.reminders);
-    // setInterval(updateQuote, CONFIG.updates.quote);
-    setInterval(fetchNcaaScores, CONFIG.updates.ncaaScores);
-    setInterval(rotateNcaaScore, CONFIG.ncaa.scoreRotationInterval);
+    setInterval(fetchWikipediaArticle, CONFIG.updates.wikipedia);
 }
 
 // Start the application
