@@ -1,86 +1,49 @@
-<!-- This file goes in /home/pi/smart-frame/templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="5000">
-
-    <title>Info Hub</title>
-    <!-- Tailwind CSS for styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts for a nice, clean font -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-
-    <!-- Import the JavaScript file -->
+    <title>SmartFrame</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 </head>
-<body class="p-10">
-    <!-- Slideshow background container -->
-    <div id="slideshow"></div>
+<body>
+    <div id="stage"></div>
 
-    <!-- Special Content Overlay -->
-    <div id="special-content-overlay" class="hidden absolute inset-0 z-10 p-8 sm:p-12 md:p-20 flex flex-col items-center justify-center">
-        <div id="special-content" class="w-full h-full text-center max-w-7xl">
-            <!-- Content will be injected here by JavaScript -->
+    <div id="ui">
+        <div id="clock-widget" class="widget">
+            <div id="clock-time">--:--</div>
+            <div id="clock-date">&nbsp;</div>
+        </div>
+
+        <div id="weather-widget" class="widget">
+            <div>
+                <div id="weather-temp">--°</div>
+                <div id="weather-city">Loading…</div>
+            </div>
+            <div class="right">
+                <img id="weather-icon" alt="" hidden>
+                <div id="weather-icon-emoji" hidden></div>
+                <div id="weather-desc"></div>
+            </div>
+        </div>
+
+        <div id="special-wrap" class="hidden">
+            <div id="special" class="widget hidden"></div>
+        </div>
+
+        <div id="note-widget" class="widget">
+            <div id="note-label">Note for you</div>
+            <div id="note-text"></div>
+            <div id="note-author"></div>
+        </div>
+
+        <div id="wiki-widget" class="widget">
+            <div id="teleprompter-container">
+                <div id="teleprompter-content">Loading article…</div>
+            </div>
         </div>
     </div>
 
-    <!-- Main grid for laying out the widgets -->
-    <div class="h-screen grid grid-cols-4 grid-rows-4 gap-6">
-
-        <!-- Clock Widget -->
-        <div class="col-span-1 row-span-1 widget flex flex-col justify-center overflow-hidden">
-            <div id="clock-time" class="text-6xl md:text-8xl font-bold tracking-tight ml-5">--:--:--</div>
-            <div id="clock-date" class="text-xl md:text-4xl font-medium opacity-80 ml-5">----------</div>
-        </div>
-        
-        <!-- Empty Cell for spacing -->
-        <div class="col-span-2 row-span-1"></div>
-
-        <!-- Weather Widget -->
-        <div class="col-span-1 row-span-1 widget flex items-center justify-between">
-            <div id="weather-info">
-                <div id="weather-temp" class="text-5xl md:text-7xl font-bold">--°</div>
-                <div id="weather-city" class="text-lg md:text-4xl opacity-80">Loading...</div>
-            </div>
-            <!-- make the weather icon stack on top of the description in tailwind css-->
-            <div class="flex flex-col items-end mr-5">
-                <img src="" id="weather-icon" class="w-20 h-20"></img>
-                <div id="weather-desc" class="text-lg md:text-4xl text-right opacity-80 capitalize">Loading...</div>
-            </div>
-        </div>
-
-        <!-- Empty Cell for spacing -->
-        <div class="col-span-4 row-span-2"></div>
-
-        <!-- Reminders & Teleprompter Widgets -->
-        <div class="col-span-1 row-span-1 widget overflow-hidden">
-             <h2 class="text-4xl font-bold mb-2 ml-5">Reminders</h2>
-             <div id="reminders-list" class="text-3xl space-y-2 ml-5">Loading...</div>
-        </div>
-        
-        <!-- Empty Cell for spacing -->
-        <div class="col-span-2 row-span-1"></div>
-        
-        <div class="col-span-1 row-span-1 widget overflow-hidden relative">
-            <div id="teleprompter-container" class="relative h-full overflow-hidden">
-                <div id="teleprompter-content" class="text-2xl leading-relaxed">
-                    <div>Loading article...</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Quote Widget -->
-        <!-- <div class="col-span-4 row-span-1 widget self-end overflow-hidden mb-8">
-            <div id="quote-text" class="text-5xl italic text-center">"Loading inspirational quote..."</div>
-            <div id="quote-author" class="text-4xl text-right opacity-80">- Author</div>
-        </div> -->
-    </div>
-
-    <!-- Import the JavaScript file -->
     <script src="{{ url_for('static', filename='js/index.js') }}"></script>
 </body>
 </html>
