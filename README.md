@@ -11,6 +11,8 @@ sudo apt install ffmpeg   # video transcoding and dimensions
 python app.py
 ```
 
+Optional: `pip install pillow-heif` (needs `libheif-dev`) accepts raw HEIC files. iPhones normally convert photos to JPEG on upload, so it is usually not needed.
+
 - Display: `http://localhost:5000/` (point the Chromium kiosk autostart here).
 - Manage (notes, media, settings): `http://<pi-address>:5000/upload` from a phone or laptop on the same network. There is no login, so keep it on a trusted LAN.
 
