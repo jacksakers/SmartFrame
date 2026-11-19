@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>SmartFrame – Manage</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/manage.css') }}">
+</head>
+<body>
+    <header>
+        <h1>SmartFrame</h1>
+        <nav id="tabs" role="tablist">
+            <button role="tab" data-tab="notes" class="active">Notes</button>
+            <button role="tab" data-tab="media">Add media</button>
+            <button role="tab" data-tab="library">Library</button>
+            <button role="tab" data-tab="settings">Settings</button>
+        </nav>
+    </header>
+
+    <main>
+        <section id="tab-notes" class="tab active">
+            <label for="author">Your name</label>
+            <input id="author" type="text" maxlength="40" placeholder="Who is this from?" autocomplete="name">
+            <label for="note-input">Note for the frame</label>
+            <textarea id="note-input" rows="4" maxlength="280" placeholder="Write something…"></textarea>
+            <div class="row">
+                <span id="note-count" class="muted">0 / 280</span>
+                <button id="note-send" class="primary">Send</button>
+            </div>
+            <p id="note-msg" class="msg" role="status"></p>
+            <h2>On the frame</h2>
+            <ul id="note-list" class="list"></ul>
+        </section>
+
+        <section id="tab-media" class="tab">
+            <div id="dropzone">
+                <p>Drop photos or videos here</p>
+                <label class="button primary" for="file-input">Choose files</label>
+                <input id="file-input" type="file" multiple accept="image/*,video/*,.heic,.heif" hidden>
+                <p class="muted">Videos should be short; they play silently. Large videos take a minute to process.</p>
+            </div>
+            <ul id="upload-list" class="list"></ul>
+        </section>
+
+        <section id="tab-library" class="tab">
+            <p id="library-msg" class="msg" role="status"></p>
+            <div id="library-grid"></div>
+        </section>
+
+        <section id="tab-settings" class="tab">
+            <form id="settings-form">
+                <h2>Photos</h2>
+                <label for="fit_mode">Cropping</label>
+                <select id="fit_mode" data-setting>
+                    <option value="smart">Smart (fill landscape, fit portrait)</option>
+                    <option value="fill">Always fill the screen (crops)</option>
+                    <option value="fit">Always show the whole photo</option>
+                </select>
+                <label class="check"><input id="pair_portraits" type="checkbox" data-setting> Show two portrait photos side by side</label>
+                <label for="photo_seconds">Seconds per photo</label>
+                <input id="photo_seconds" type="number" inputmode="numeric" min="3" max="600" data-setting>
+                <label for="max_video_seconds">Longest video to play (seconds)</label>
+                <input id="max_video_seconds" type="number" inputmode="numeric" min="5" max="600" data-setting>
+
+                <h2>Extras</h2>
+                <label class="check"><input id="show_jokes" type="checkbox" data-setting> Show jokes and advice</label>
+                <label for="joke_every">Joke every N slides</label>
+                <input id="joke_every" type="number" inputmode="numeric" min="2" max="50" data-setting>
+                <label for="note_seconds">Seconds per note</label>
+                <input id="note_seconds" type="number" inputmode="numeric" min="3" max="300" data-setting>
+                <label for="wiki_speed">Wikipedia scroll speed</label>
+                <select id="wiki_speed" data-setting>
+                    <option value="slow">Slow</option>
+                    <option value="normal">Normal</option>
+                    <option value="fast">Fast</option>
+                </select>
+
+                <h2>Google Photos album</h2>
+                <label for="album_url">Shared album link</label>
+                <input id="album_url" type="url" inputmode="url" placeholder="https://photos.app.goo.gl/…" data-setting>
+                <label for="album_sync_hours">Sync every (hours)</label>
+                <input id="album_sync_hours" type="number" inputmode="numeric" min="1" max="168" data-setting>
+                <label for="album_max_photos">Keep at most (photos)</label>
+                <input id="album_max_photos" type="number" inputmode="numeric" min="5" max="1000" data-setting>
+
+                <div class="row">
+                    <button type="button" id="album-sync" class="secondary">Sync now</button>
+                    <button type="submit" class="primary">Save settings</button>
+                </div>
+                <p id="album-status" class="muted"></p>
+                <p id="settings-msg" class="msg" role="status"></p>
+            </form>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/manage.js') }}"></script>
+</body>
+</html>

@@ -42,7 +42,7 @@ html { font-size: calc(100vh / 40); }
 #special { max-width: 70%; text-align: center; transition: opacity 0.6s; }
 #special.hidden, #special-wrap.hidden { display: none; }
 
-#clock-time { font-size: 3.6rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+#clock-time { font-size: 3.2rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; white-space: nowrap; }
 #clock-date { font-size: 1.3rem; opacity: 0.8; }
 #weather-temp { font-size: 3.2rem; font-weight: 700; line-height: 1.1; }
 #weather-city, #weather-desc { font-size: 1.2rem; opacity: 0.8; }

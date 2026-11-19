@@ -14,6 +14,10 @@ env/
 static/uploads/*
 !static/uploads/.gitkeep
 
+# Runtime data (settings, notes, thumbnails)
+data/
+.venv/
+
 # OS
 .DS_Store
 Thumbs.db
