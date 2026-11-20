@@ -63,7 +63,7 @@ function loaded(el, event) {
 
 function updateClock() {
     const now = new Date();
-    els.time.textContent = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    els.time.textContent = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
     els.date.textContent = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
     const night = now.getHours() >= 18 || now.getHours() < 7;
     els.stage.style.filter = night ? 'brightness(0.5)' : 'brightness(1)';

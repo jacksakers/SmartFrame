@@ -24,7 +24,7 @@ html { font-size: calc(100vh / 40); }
 /* ---- Overlay widgets ---- */
 #ui {
     position: fixed; inset: 0; padding: 1.6rem;
-    display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; grid-template-rows: auto 1fr auto;
+    display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; grid-template-rows: auto minmax(0, 1fr) auto;
     gap: 1.2rem; pointer-events: none;
 }
 .widget {
@@ -36,10 +36,10 @@ html { font-size: calc(100vh / 40); }
 }
 #clock-widget { grid-column: 1; grid-row: 1; }
 #weather-widget { grid-column: 4; grid-row: 1; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-#note-widget { grid-column: 1; grid-row: 3; align-self: end; min-height: 8rem; transition: opacity 0.6s; }
-#wiki-widget { grid-column: 4; grid-row: 3; align-self: end; height: 17rem; position: relative; }
-#special-wrap { grid-column: 1 / 5; grid-row: 2; display: flex; align-items: center; justify-content: center; }
-#special { max-width: 70%; text-align: center; transition: opacity 0.6s; }
+#note-widget { grid-column: 1 / 3; grid-row: 3; align-self: end; transition: opacity 0.6s; }
+#wiki-widget { grid-column: 4; grid-row: 3; align-self: end; height: 9rem; position: relative; }
+#special-wrap { grid-column: 1 / 5; grid-row: 2; display: flex; align-items: center; justify-content: center; min-height: 0; }
+#special { max-width: 55%; max-height: 100%; padding: 0.8rem 1.2rem; text-align: center; transition: opacity 0.6s; }
 #special.hidden, #special-wrap.hidden { display: none; }
 
 #clock-time { font-size: 3.2rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; white-space: nowrap; }
@@ -50,21 +50,24 @@ html { font-size: calc(100vh / 40); }
 #weather-icon-emoji { font-size: 3rem; line-height: 1; }
 .right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; }
 
-#note-label { font-size: 1rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.08em; }
-#note-text { font-size: 1.9rem; line-height: 1.3; margin: 0.3rem 0; overflow-wrap: anywhere; }
-#note-author { font-size: 1.2rem; opacity: 0.75; text-align: right; }
+#note-label { font-size: 0.7rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.08em; }
+#note-text {
+    font-size: 1.05rem; line-height: 1.3; margin: 0.2rem 0; overflow-wrap: anywhere;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+#note-author { font-size: 0.8rem; opacity: 0.75; text-align: right; }
 
-#special h2 { font-size: 1.5rem; margin-bottom: 0.6rem; opacity: 0.85; }
-#special p { font-size: 2.8rem; font-style: italic; line-height: 1.25; }
+#special h2 { font-size: 0.9rem; margin-bottom: 0.3rem; opacity: 0.85; }
+#special p { font-size: 1.6rem; font-style: italic; line-height: 1.25; }
 
 /* ---- Wikipedia teleprompter ---- */
 #teleprompter-container {
-    position: absolute; inset: 0.8rem 1.4rem; overflow: hidden;
+    position: absolute; inset: 0.5rem 1rem; overflow: hidden;
     mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%);
     -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%);
 }
-#teleprompter-content { font-size: 1.15rem; line-height: 1.6; will-change: transform; }
-#teleprompter-content .meta { font-size: 0.9rem; opacity: 0.7; margin-bottom: 0.3rem; }
-#teleprompter-content h3 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; }
+#teleprompter-content { font-size: 0.8rem; line-height: 1.5; will-change: transform; }
+#teleprompter-content .meta { font-size: 0.65rem; opacity: 0.7; margin-bottom: 0.3rem; }
+#teleprompter-content h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.5rem; }
 #teleprompter-content strong, #teleprompter-content b { font-weight: 600; color: #fbbf24; }
 #teleprompter-content p { margin-bottom: 0.8rem; }
